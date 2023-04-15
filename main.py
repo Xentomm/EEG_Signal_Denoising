@@ -11,7 +11,7 @@ import pywt
 
 
 def main():
-    pass
+    print("Test")
 
 if __name__ == '__main__':
     main()
