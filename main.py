@@ -26,8 +26,7 @@ class EEGSignalProcessing:
         file.close()
         return signal
     
-    def plot_signal(data, sampling_frequency, title, number_of_channels = None, channel_labels = None, yaxis_label = None, xaxis_label = None):
-        
+    def plot_signal(data, sampling_frequency, title, number_of_channels = None, channel_labels = None, yaxis_label = None, xaxis_label = None):       
         plt.rcParams['font.size'] = '16'
         fig = plt.figure()
         ax = fig.add_subplot(1,1,1)
@@ -100,14 +99,11 @@ class EEGSignalProcessing:
             # Create wavelet object and define parameters
             wav = pywt.Wavelet(name)
             max_level = pywt.dwt_max_level(len(linear_array) + 1, wav.dec_len)
-            # maxlev = 2 # Override if desired
             print("Maximum level is " + str(max_level))
             threshold = 0.04  # Threshold for filtering
 
             # Decompose into wavelet components, to the level selected:
             coeffs = pywt.wavedec(linear_array, name, level=5)
-
-            # cA = pywt.threshold(cA, threshold*max(cA))
             plt.figure()
             for i in range(1, len(coeffs)):
                 plt.subplot(max_level, 1, i)
@@ -125,9 +121,7 @@ class EEGSignalProcessing:
         def ica(data, mask=None):
             # maska do wyboru składowych
             reduce_level = [True, True, True, True, True, True, True, True, True]
-            # reduce_level[7] = False
             reduce_level[7] = False
-            # reduce_level = [True, False]
 
             if mask is not None:
                 reduce_level = mask
