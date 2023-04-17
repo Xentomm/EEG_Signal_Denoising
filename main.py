@@ -9,6 +9,16 @@ import scipy.signal as sig
 from sklearn.decomposition import FastICA, PCA
 import pywt
 
+class EEGP:
+    def __init__(self) -> None:
+        pass
+
+    class NoiseReduction:
+        pass
+
+    class Noise:
+        pass
+
 
 def main():
     print("Test")
