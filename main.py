@@ -111,6 +111,8 @@ class EEGSignalProcessing:
                 coeffs[i] = pywt.threshold(coeffs[i], threshold * max(coeffs[i]))
                 plt.plot(coeffs[i])
             plt.show()
+            datarec = pywt.waverec(coeffs, name)
+            return np.array(datarec)
 
         def wavelet_all_channels(data):
             output = []
@@ -188,6 +190,16 @@ class EEGSignalProcessing:
                 output[i] = data[i] + noise
             return output
 
+class Metrics:
+    def __init__(self) -> None:
+        pass
+
+    def evaluate_signal():
+        pass
+
+    def differantial():
+        pass
+
 
 def main():
     channels_to_plot = [0,1,2,3,4]
@@ -199,24 +211,46 @@ def main():
                                     yaxis_label='Wartosc sygnalu', xaxis_label='Czas [s]')
 
     low = 0
-    high = 20
-    sig_noise1 = EEGSignalProcessing.Noise.add_uniform_noise(signal, low=low, high=high, seed=100)
-    EEGSignalProcessing.plot_signal(sig_noise1, title="Zaszumiony sygnał 5 kanałów EEG (Uniform distribution Low={}, High={})".format(
+    high = 10
+    sig_noise_uniform = EEGSignalProcessing.Noise.add_uniform_noise(signal, low=low, high=high, seed=100)
+    EEGSignalProcessing.plot_signal(sig_noise_uniform, title="Zaszumiony sygnał 5 kanałów EEG (Rozkład Jednostajny Low={}, High={})".format(
         low, high), sampling_frequency=2048, number_of_channels=channels_to_plot, yaxis_label='Wartość sygnału', xaxis_label='Czas [s]')
 
     mean = 0
-    std = 1
-    ampl = 1
-    sig_noise2 = EEGSignalProcessing.Noise.add_normal_noise(signal, mean=mean, std=std, amplitude=ampl, seed=100)
-    EEGSignalProcessing.plot_signal(sig_noise2, title="Zaszumiony sygnał 5 kanałów EEG (Normal Distribution Low={}, High={})".format(
+    std = 2
+    ampl = 2
+    sig_noise_normal = EEGSignalProcessing.Noise.add_normal_noise(signal, mean=mean, std=std, amplitude=ampl, seed=100)
+    EEGSignalProcessing.plot_signal(sig_noise_normal, title="Zaszumiony sygnał 5 kanałów EEG (Rozkład Normalny Low={}, High={})".format(
         mean, std), sampling_frequency=2048, number_of_channels=channels_to_plot, yaxis_label='Wartość sygnału', xaxis_label='Czas [s]')
 
     sig_n3_left = 0
-    sig_n3_peak = 5
-    sig_n3_right = 15
-    sig_noise3 = EEGSignalProcessing.Noise.add_triangular_noise(signal, left=sig_n3_left, peak=sig_n3_peak, right=sig_n3_right, seed=100)
-    EEGSignalProcessing.plot_signal(sig_noise3, title="Zaszumiony sygnał 5 kanałów EEG (Triangular Distribution Left={}, Peak={}, High={})".format(
+    sig_n3_peak = 10
+    sig_n3_right = 20
+    sig_noise_triangular = EEGSignalProcessing.Noise.add_triangular_noise(signal, left=sig_n3_left, peak=sig_n3_peak, right=sig_n3_right, seed=100)
+    EEGSignalProcessing.plot_signal(sig_noise_triangular, title="Zaszumiony sygnał 5 kanałów EEG (Rozkład Trójkątny Left={}, Peak={}, High={})".format(
         sig_n3_left, sig_n3_peak, sig_n3_right), sampling_frequency=2048, number_of_channels=channels_to_plot, yaxis_label='Wartość sygnału', xaxis_label='Czas [s]')
+    
+
+    # Odszumianie sygnałów
+    # Autoregresja
+    AR_lag = 10
+    signal_autorgresion = EEGSignalProcessing.NoiseReduction.autoregression(sig_noise_uniform, delay = AR_lag)
+    EEGSignalProcessing.plot_signal(signal_autorgresion,
+                               title="5 odszumionych kanałów EEG - regresja liniowa delay={}".format(
+                                   AR_lag), sampling_frequency=2048, number_of_channels=channels_to_plot,
+                               yaxis_label='wartość sygnału', xaxis_label='czas [s]')
+    
+    # Wavelet
+    signal_wavelet = EEGSignalProcessing.NoiseReduction.wavelet_all_channels(sig_noise_normal)
+    EEGSignalProcessing.plot_signal(signal_wavelet,
+                               title="5 odszumionych kanałów EEG - Wavelet", sampling_frequency=2048, number_of_channels=channels_to_plot,
+                               yaxis_label='wartość sygnału', xaxis_label='czas [s]')
+    
+    # ICA
+    signal_ICA = EEGSignalProcessing.NoiseReduction.ica(sig_noise_uniform)
+    EEGSignalProcessing.plot_signal(signal_ICA,
+                               title="5 odszumionych kanałów EEG - ICA", sampling_frequency=2048, number_of_channels=channels_to_plot,
+                               yaxis_label='wartość sygnału', xaxis_label='czas [s]')
 
 if __name__ == '__main__':
     main()
