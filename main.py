@@ -1,12 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pyedflib
-import sklearn.linear_model as slm
+# import sklearn.linear_model as slm
 from sklearn import metrics
 from statsmodels.tsa.ar_model import AutoReg
-import scipy
-import scipy.signal as sig
-from sklearn.decomposition import FastICA, PCA
+# import scipy
+# import scipy.signal as signal
+from sklearn.decomposition import FastICA
 import pywt
 
 class EEGSignalProcessing:
@@ -99,7 +99,7 @@ class EEGSignalProcessing:
             # Create wavelet object and define parameters
             wav = pywt.Wavelet(name)
             max_level = pywt.dwt_max_level(len(linear_array) + 1, wav.dec_len)
-            print("Maximum level is " + str(max_level))
+            # print("Maximum level is " + str(max_level))
             threshold = 0.04  # Threshold for filtering
 
             # Decompose into wavelet components, to the level selected:
@@ -194,11 +194,21 @@ class Metrics:
     def __init__(self) -> None:
         pass
 
-    def evaluate_signal():
-        pass
+    def evaluate_signal(signal, prediction, cut_left=100, cut_right=100):
+        signal_cut = signal[cut_left:-cut_right]
+        predicted_cut = prediction[cut_left:-cut_right]
 
-    def differantial():
-        pass
+        # metryki z sklearn
+        mae = metrics.mean_absolute_error(signal_cut, predicted_cut)
+        mse = metrics.mean_squared_error(signal_cut, predicted_cut)
+
+        # wyświetlanie
+        print('MAE z biblioteki sklearn: {}'.format(round(mae, 2)))
+        print('MSE z biblioteki sklearn: {}'.format(round(mse, 2)))
+
+    def differantial(sigA, sigB, cutleft=100, cutright=100):
+        differential = sigA[:,cutleft:-cutright] - sigB[:,cutleft:-cutright]
+        return differential
 
 
 def main():
@@ -210,8 +220,8 @@ def main():
     EEGSignalProcessing.plot_signal(signal,sampling_frequency= 2048, title = "Orginalne sygnały EEG", number_of_channels = channels_to_plot,
                                     yaxis_label='Wartosc sygnalu', xaxis_label='Czas [s]')
 
-    low = 0
-    high = 10
+    low = 2
+    high = 4
     sig_noise_uniform = EEGSignalProcessing.Noise.add_uniform_noise(signal, low=low, high=high, seed=100)
     EEGSignalProcessing.plot_signal(sig_noise_uniform, title="Zaszumiony sygnał 5 kanałów EEG (Rozkład Jednostajny Low={}, High={})".format(
         low, high), sampling_frequency=2048, number_of_channels=channels_to_plot, yaxis_label='Wartość sygnału', xaxis_label='Czas [s]')
@@ -224,8 +234,8 @@ def main():
         mean, std), sampling_frequency=2048, number_of_channels=channels_to_plot, yaxis_label='Wartość sygnału', xaxis_label='Czas [s]')
 
     sig_n3_left = 0
-    sig_n3_peak = 10
-    sig_n3_right = 20
+    sig_n3_peak = 4
+    sig_n3_right = 6
     sig_noise_triangular = EEGSignalProcessing.Noise.add_triangular_noise(signal, left=sig_n3_left, peak=sig_n3_peak, right=sig_n3_right, seed=100)
     EEGSignalProcessing.plot_signal(sig_noise_triangular, title="Zaszumiony sygnał 5 kanałów EEG (Rozkład Trójkątny Left={}, Peak={}, High={})".format(
         sig_n3_left, sig_n3_peak, sig_n3_right), sampling_frequency=2048, number_of_channels=channels_to_plot, yaxis_label='Wartość sygnału', xaxis_label='Czas [s]')
@@ -234,23 +244,64 @@ def main():
     # Odszumianie sygnałów
     # Autoregresja
     AR_lag = 10
-    signal_autorgresion = EEGSignalProcessing.NoiseReduction.autoregression(sig_noise_uniform, delay = AR_lag)
-    EEGSignalProcessing.plot_signal(signal_autorgresion,
+    signal_autoregresion = EEGSignalProcessing.NoiseReduction.autoregression(sig_noise_triangular, delay = AR_lag)
+    EEGSignalProcessing.plot_signal(signal_autoregresion,
                                title="5 odszumionych kanałów EEG - regresja liniowa delay={}".format(
                                    AR_lag), sampling_frequency=2048, number_of_channels=channels_to_plot,
                                yaxis_label='wartość sygnału', xaxis_label='czas [s]')
     
     # Wavelet
-    signal_wavelet = EEGSignalProcessing.NoiseReduction.wavelet_all_channels(sig_noise_normal)
+    signal_wavelet = EEGSignalProcessing.NoiseReduction.wavelet_all_channels(sig_noise_triangular)
     EEGSignalProcessing.plot_signal(signal_wavelet,
                                title="5 odszumionych kanałów EEG - Wavelet", sampling_frequency=2048, number_of_channels=channels_to_plot,
                                yaxis_label='wartość sygnału', xaxis_label='czas [s]')
     
     # ICA
-    signal_ICA = EEGSignalProcessing.NoiseReduction.ica(sig_noise_uniform)
+    signal_ICA = EEGSignalProcessing.NoiseReduction.ica(sig_noise_triangular)
     EEGSignalProcessing.plot_signal(signal_ICA,
                                title="5 odszumionych kanałów EEG - ICA", sampling_frequency=2048, number_of_channels=channels_to_plot,
                                yaxis_label='wartość sygnału', xaxis_label='czas [s]')
+    
+    # Metryki
+    ch = 4
+    noise_signal = sig_noise_normal
+
+    print('\nORYGINALNY')
+    Metrics.evaluate_signal(signal[ch], signal[ch])
+
+    print('\nNIEODSZUMIONY, dodano szum rozkład normalny')
+    Metrics.evaluate_signal(signal[ch], noise_signal[ch])
+
+    print('\nODSZUMIONY, najpierw dodano szum rozkład normalny, potem autoregresja')
+    Metrics.evaluate_signal(signal[ch], signal_autoregresion[ch])
+
+    print('\nODSZUMIONY, najpierw dodano szum rozkład normalny, potem ICA')
+    Metrics.evaluate_signal(signal[ch], signal_ICA[ch])
+
+    print('\nODSZUMIONY, najpierw dodano szum rozkład normalny, potem wavelet')
+    Metrics.evaluate_signal(signal[ch], signal_wavelet[ch])
+
+    # Sygnał różnicowy
+    differential_noise = Metrics.differantial(sig_noise_normal, signal)
+    differential_AR = Metrics.differantial(signal_autoregresion, signal)
+    differential_ICA = Metrics.differantial(signal_ICA, signal)
+    differential_Wavelet = Metrics.differantial(signal_wavelet, signal)
+
+    EEGSignalProcessing.plot_signal(differential_noise, title="Sygnał różnicowy, zaszumiony-orginalny",
+                                    sampling_frequency=2048, number_of_channels=[ch], yaxis_label="Wartość sygnału",
+                                    xaxis_label="Czas [s]")
+    
+    EEGSignalProcessing.plot_signal(differential_AR, title="Sygnał różnicowy, AR-orginalny",
+                                    sampling_frequency=2048, number_of_channels=[ch], yaxis_label="Wartość sygnału",
+                                    xaxis_label="Czas [s]")
+    
+    EEGSignalProcessing.plot_signal(differential_ICA, title="Sygnał różnicowy, ICA-orginalny",
+                                    sampling_frequency=2048, number_of_channels=[ch], yaxis_label="Wartość sygnału",
+                                    xaxis_label="Czas [s]")
+    
+    EEGSignalProcessing.plot_signal(differential_Wavelet, title="Sygnał różnicowy, wavelet-orginalny",
+                                    sampling_frequency=2048, number_of_channels=[ch], yaxis_label="Wartość sygnału",
+                                    xaxis_label="Czas [s]")
 
 if __name__ == '__main__':
     main()
